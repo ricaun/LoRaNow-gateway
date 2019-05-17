@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <!-- Meta tags Obrigat�rias -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+    <title>LoRaNow</title>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+          startSocket();
+        });
+
+    </script>
+    
+    
+    <script>
+      
+      var ws = null;
+      
+      function startSocket(){
+      ws = new WebSocket('ws://'+document.location.host+'/ws',['arduino']);
+      ws.binaryType = "arraybuffer";
+      ws.onopen = function(e){
+        console.log("Connected");
+      };
+      ws.onclose = function(e){
+        console.log("Disconnected");
+        setTimeout("startSocket()", 100);
+      };
+      ws.onerror = function(e){
+        console.log("ws error", e);
+        console.log("Error");
+      };
+      ws.onmessage = function(e){
+        var msg = "";
+        if(e.data instanceof ArrayBuffer){
+          msg += "BIN:";
+          var bytes = new Uint8Array(e.data);
+          for (var i = 0; i < bytes.length; i++) {
+            msg += String.fromCharCode(bytes[i]);
+          }
+        } else {
+          //msg += "TXT:"+e.data;
+          msg += e.data;
+        }
+        console.log(msg);
+        try {
+          var obj = JSON.parse(msg);
+          if (obj.id != null) {
+            var id = obj.id.toString(16);
+            if ($( "#"+id ).length == 0)
+              $( "main" ).append( "<div id='"+id+"' class='jumbotron mt-3 text-center'></div>" );
+            $( "#"+id ).empty();
+            $( "#"+id ).append( "<h2>"+obj.id.toString(16)+"</h2>" )
+            
+            var d = new Date();
+            $( "#"+id ).append( "<div>Time: "+dateToString()+"</div>" )
+            $( "#"+id ).append( "<div>Id: "+obj.id.toString(16)+"</div>" )
+            $( "#"+id ).append( "<div>Count: "+obj.count+"</div>" )
+            $( "#"+id ).append( "<div>Rssi: "+obj.rssi+"</div>" )
+            $( "#"+id ).append( "<div>Snr: "+obj.snr+"</div>" )
+            var payload = obj.payload;
+            console.log(payload);
+            if (typeof payload === 'string')
+            {
+              var key = "payload";
+              $( "#"+id ).append( "<div>"+key+": "+payload+"</div>" )
+            }
+            else
+            {
+              for(var key in payload){
+                console.log(key + ' - ' + payload[key])
+                $( "#"+id ).append( "<div>"+key+": "+payload[key]+"</div>" )
+              }
+            }
+          }
+        }
+        catch (e) {
+         console.log("json", e);
+        }
+        
+      };
+      
+    }
+    
+    function dateToString(date) {
+        var msec = new Date(date).getTime();
+        var offset = new Date().getTimezoneOffset();
+        var d = new Date(msec - offset * 60000);
+        return d.toLocaleString();
+    }
+    
+    function dateToString() {
+        var msec = new Date().getTime();
+        var d = new Date(msec);
+        return d.toLocaleString();
+    }
+      
+    </script>
+    
+    
+  </head>
+  <body>
+    <main class="container">
+    </main>
+
+  </body>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+</html>
